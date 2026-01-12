@@ -1,3 +1,5 @@
+require 'google/apis/errors'
+
 module Spree
   module GoogleShopping
     class SyncProductJob < SpreeGoogleProducts::BaseJob
