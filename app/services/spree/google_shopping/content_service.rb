@@ -80,7 +80,7 @@ module Spree
         google_category_id = g_prod_attr&.google_product_category.presence || @credential.default_google_product_category
 
         raw_gtin = g_var_attr&.gtin.presence || g_prod_attr&.gtin.presence
-        gtin = (raw_gtin && raw_gtin.length >= 8) ? raw_gtin : nil
+        gtin = (raw_gtin && raw_gtin.to_s.length >= 8) ? raw_gtin.to_s : nil
         
         mpn = g_var_attr&.mpn.presence || g_prod_attr&.mpn.presence || variant.sku
 
