@@ -1,0 +1,131 @@
+<% content_for :page_title do %>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <%= image_tag 'app_icons/google_merchant_logo.svg', width: 35, height: 35, alt: 'Google Merchant Logo' %>
+    <span><%= Spree.t(:google_merchant_products) %></span>
+  </div>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= button_to admin_google_shopping_sync_path, method: :post, class: 'btn btn-primary' do %>
+    <%= icon('refresh', class: 'mr-1') %> Sync All Products
+  <% end %>
+<% end %>
+
+<div class="card mb-3">
+  <div class="card-body p-3">
+    <%= search_form_for [:admin, @search], url: admin_google_shopping_products_path do |f| %>
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <div class="input-group">
+            <%= f.text_field :name_cont, class: "form-control", placeholder: "Search by name or SKU..." %>
+            <div class="input-group-append">
+              <button class="btn btn-primary" type="submit">
+                <%= icon('search') %> Search
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<% if @collection.any? %>
+  <div class="table-responsive border rounded bg-white mb-3">
+    <table class="table" id="listing_google_products">
+      <thead>
+        <tr>
+          <th class="pl-4" colspan="2"><%= sort_link @search, :name, Spree.t(:name), {}, {title: 'admin_products_listing_name_title'} %></th>
+          <th>Google Status</th>
+          <th>Attributes (GTIN/Brand)</th>
+          <th class="text-right pr-4"><%= Spree.t(:action) %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @collection.each do |product| %>
+          <%# Define the variable here so it can be used below %>
+          <% g_attr = product.google_product_attribute %>
+          
+          <tr id="<%= dom_id product %>">
+
+            <td class="pl-4" style="width: 60px;">
+              <% if product.master.images.any? %>
+                <%= link_to edit_admin_google_shopping_product_path(product) do %>
+                  <%= image_tag main_app.url_for(product.master.images.first.url(:mini)), class: "rounded border", style: "width: 48px; height: 48px; object-fit: cover;" %>
+                <% end %>
+              <% else %>
+                <div class="rounded border bg-light d-flex align-items-center justify-content-center text-muted" style="width: 48px; height: 48px;">
+                  <%= icon('image', width: 20, height: 20) %>
+                </div>
+              <% end %>
+            </td>
+            <td>
+              <%= link_to product.name, edit_admin_google_shopping_product_path(product), class: "text-dark font-weight-bold d-block mb-1" %>
+              <% if product.sku.present? %>
+                <span class="badge badge-active border" style="background-color: #e8f5e9; color: #2e7d32;">
+                  <%= icon('check', class: 'mr-1') %> <%= product.sku %>
+                </span>
+              <% else %>
+                <span class="badge badge-danger">
+                  <%= icon('alert-circle', class: 'mr-1') %> No SKU
+                </span>
+              <% end %>
+            </td>
+            <td>
+              <% case g_attr&.google_status %>
+              <% when 'approved' %>
+                <span class="badge badge-success">
+                  <%= icon('check', class: 'mr-1') %> Approved
+                </span>
+              
+              <% when 'pending' %>
+                <span class="badge badge-warning text-white">
+                  <%= icon('clock', class: 'mr-1') %> Pending
+                </span>
+
+              <% when 'disapproved' %>
+                <span class="badge badge-danger">
+                  <%= icon('alert-triangle', class: 'mr-1') %> Disapproved
+                </span>
+              <% else %>
+                <span class="badge badge-light border">
+                  <%= icon('circle', class: 'mr-1 text-muted') %> Not Synced
+                </span>
+              <% end %>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <% if g_attr&.gtin.present? %>
+                  <span class="text-success small" title="GTIN Present"><%= icon('check') %> GTIN</span>
+                <% else %>
+                  <span class="text-danger small" title="Missing GTIN"><%= icon('x') %> GTIN</span>
+                <% end %>
+                <span class="text-muted">|</span>
+                <% if g_attr&.brand.present? %>
+                  <span class="text-success small" title="Brand Present"><%= icon('check') %> Brand</span>
+                <% else %>
+                  <span class="text-danger small" title="Missing Brand"><%= icon('x') %> Brand</span>
+                <% end %>
+              </div>
+            </td>
+            <td class="actions text-right pr-4">
+              <div class="d-flex justify-content-end align-items-center gap-1">
+                <%= button_to sync_one_admin_google_shopping_product_path(product), method: :post, class: "btn btn-outline-primary btn-sm mr-1", title: "Push to Google" do %>
+                  <%= icon('refresh', width: 16, height: 16) %>
+                <% end %>
+                <%= link_to_edit product, url: edit_admin_google_shopping_product_path(product), no_text: true, class: 'btn btn-light btn-sm' %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <%= render 'spree/admin/shared/index_table_options', collection: @collection %>
+
+<% else %>
+  <div class="alert alert-info no-objects-found">
+    <%= Spree.t(:no_resource_found, resource: "Products") %>
+  </div>
+<% end %>

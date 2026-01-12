@@ -1,0 +1,121 @@
+<% content_for :page_title do %>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <%= image_tag 'app_icons/google_merchant_logo.svg', width: 35, height: 35, alt: 'Google Merchant Logo' %>
+    <span><%= Spree.t(:google_merchant) %></span>
+  </div>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= button_to admin_google_shopping_sync_path, method: :post, class: 'btn btn-primary', disabled: !@credential&.active? do %>
+    <%= icon('refresh', class: 'mr-1') %> Sync Now
+  <% end %>
+<% end %>
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">Product Status (Google Shopping)</h5>
+    
+    <% last_updated = @stats[:last_updated] %>
+    <small class="text-muted">
+      <% if last_updated && @credential&.active? %>
+        Live Data (Updated <%= time_ago_in_words(last_updated) %> ago)
+      <% else %>
+        Waiting for sync...
+      <% end %>
+    </small>
+  </div>
+  
+  <div class="card-body">
+    <% if @credential&.active? %>
+      <div class="row text-center">
+        <div class="col-6 col-md-3 border-right">
+          <h2 class="text-success display-4 mb-0"><%= @stats[:approved] || 0 %></h2>
+          <span class="badge badge-success mb-2">Approved</span>
+          <p class="small text-muted mb-0">Live & Ready to Serve</p>
+        </div>
+        <div class="col-6 col-md-3 border-right">
+          <h2 class="text-warning display-4 mb-0"><%= @stats[:limited] || 0 %></h2>
+          <span class="badge badge-warning text mb-2">Limited</span>
+          <p class="small text-muted mb-0">Approved (Partial Visibility)</p>
+          <% if (@stats[:limited] || 0) > 0 %>
+            <%= link_to admin_google_shopping_issues_path, class: "btn btn-link btn-sm p-0 mt-1" do %>
+              View Issues <%= icon('chevron-right', style: 'font-size: 0.7rem;') %>
+            <% end %>
+          <% end %>
+        </div>
+        <div class="col-6 col-md-3 border-right">
+          <h2 class="text-danger display-4 mb-0"><%= @stats[:disapproved] || 0 %></h2>
+          <span class="badge badge-danger mb-2">Not Approved</span>
+          <p class="small text-muted mb-0">Critical Issues Detected</p>
+          <% if (@stats[:disapproved] || 0) > 0 %>
+            <%= link_to admin_google_shopping_issues_path, class: "btn btn-link btn-sm p-0 mt-1" do %>
+              View Fixes <%= icon('chevron-right', style: 'font-size: 0.7rem;') %>
+            <% end %>
+          <% end %>
+        </div>
+        <div class="col-6 col-md-3">
+          <h2 class="text-info display-4 mb-0"><%= @stats[:pending] || 0 %></h2>
+          <span class="badge badge-info mb-2">Pending</span>
+          <p class="small text-muted mb-0">Under Review by Google</p>
+        </div>
+
+      </div>
+    <% else %>
+      <div class="alert alert-warning mb-0">
+        <%= icon('alert-triangle', class: 'mr-2') %>
+        Please connect your Google Account in the <strong>Configuration</strong> tab to see live stats.
+      </div>
+    <% end %>
+  </div>
+</div>
+<div class="row">
+  <div class="col-12 col-lg-6">
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Connection Details</h5>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-5">Merchant Center ID</dt>
+          <dd class="col-sm-7"><%= @credential&.merchant_center_id || 'Not Set' %></dd>
+
+          <dt class="col-sm-5">Target Country</dt>
+          <dd class="col-sm-7">
+             <% if @credential&.target_country.present? %>
+               <%= @credential.target_country %> (<%= @credential.target_currency %>)
+             <% else %>
+               <span class="text-muted">Default (US)</span>
+             <% end %>
+          </dd>
+          <dt class="col-sm-5">Last Synced</dt>
+          <dd class="col-sm-7">
+            <%= @last_sync ? time_ago_in_words(@last_sync) + " ago" : "Never" %>
+          </dd>
+        </dl>
+        <div class="mt-4">
+          <%= link_to "Configure", edit_admin_google_merchant_settings_path, class: 'btn btn-primary' %>
+          <a href="https://merchants.google.com/" target="_blank" class="btn btn-outline-primary ml-2">
+            Open Merchant Center <%= icon('external-link', class: 'ml-1') %>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Sync Health</h5>
+      </div>
+      <div class="card-body">
+        <p class="text-muted">
+          Products are automatically synced in the background immediately after you Create or Update them in Spree.
+        </p>
+        <div class="alert alert-info">
+          <strong>Note:</strong> Google usually takes 3-5 business days to review newly synced products.
+        </div>
+        <p class="small text-muted mb-0">
+          Use the "Sync Now" button at the top right to force a full update for all products immediately.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

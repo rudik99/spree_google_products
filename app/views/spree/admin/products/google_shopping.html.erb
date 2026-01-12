@@ -1,0 +1,63 @@
+<%= render 'spree/admin/shared/product_tabs', current: :google_shopping %>
+
+<% content_for :page_title do %>
+  Google Shopping Attributes
+<% end %>
+
+<%= form_for [:admin, @product], url: admin_product_path(@product), method: :put do |f| %>
+  <div class="card mb-3">
+    <div class="card-header">
+      <h5 class="card-title mb-0">Basic Information</h5>
+    </div>
+    <div class="card-body">
+      <%= f.fields_for :google_product_attribute do |g| %>
+        
+        <div class="form-group">
+          <%= g.label :brand, "Brand Name" %>
+          <%= g.text_field :brand, class: 'form-control' %>
+        </div>
+
+        <div class="row">
+          <div class="col-6">
+            <div class="form-group">
+              <%= g.label :gtin, "GTIN / UPC / EAN" %>
+              <%= g.text_field :gtin, class: 'form-control' %>
+              <small class="form-text text-muted">Leave empty if custom product.</small>
+            </div>
+          </div>
+          <div class="col-6">
+             <div class="form-group">
+              <%= g.label :mpn, "MPN (Manufacturer Part Number)" %>
+              <%= g.text_field :mpn, class: 'form-control' %>
+            </div>
+          </div>
+        </div>
+        
+        <div class="row">
+          <div class="col-4">
+             <div class="form-group">
+              <%= g.label :condition %>
+              <%= g.select :condition, ['new', 'refurbished', 'used'], {}, class: 'select2' %>
+            </div>
+          </div>
+          <div class="col-4">
+             <div class="form-group">
+              <%= g.label :gender %>
+              <%= g.select :gender, ['', 'male', 'female', 'unisex'], {}, class: 'select2' %>
+            </div>
+          </div>
+           <div class="col-4">
+             <div class="form-group">
+              <%= g.label :age_group %>
+              <%= g.select :age_group, ['', 'adult', 'kids', 'toddler', 'infant'], {}, class: 'select2' %>
+            </div>
+          </div>
+        end %>
+      <% end %>
+    </div>
+  </div>
+  
+  <div class="form-actions" data-hook="buttons">
+    <%= render partial: 'spree/admin/shared/edit_resource_links' %>
+  </div>
+<% end %>

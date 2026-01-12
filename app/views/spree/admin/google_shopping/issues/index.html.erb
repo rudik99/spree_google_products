@@ -1,0 +1,106 @@
+<% content_for :page_title do %>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <%= image_tag 'app_icons/google_logo.svg', width: 30, height: 30, alt: 'Google Logo' %>
+    <span><%= Spree.t(:google_data_quality_issues) %></span>
+  </div>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= button_link_to "Back to Dashboard", admin_google_shopping_dashboard_path, icon: 'arrow-left', class: 'btn-light' %>
+<% end %>
+
+<% if @issues_summary.any? %>
+  
+  <div class="alert alert-info mb-4">
+    <div class="d-flex">
+      <div>
+        <h5 class="alert-heading h6">Improve your ad performance</h5>
+        <p class="mb-0 small">The following products have issues reported by Google Merchant Center. Resolving these will allow your products to be approved.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="bg-light">
+          <tr>
+            <th style="width: 25%;" class="pl-4">What needs attention</th>
+            <th style="width: 40%;">How to fix</th>
+            <th style="width: 15%;" class="text-center">Products</th>
+            <th style="width: 20%;" class="text-right pr-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @issues_summary.each do |issue| %>
+            <% 
+               # Calculate Percentage
+               percent = ((issue[:affected_count].to_f / @total_variants) * 100).round(1) 
+               is_error = issue[:severity] == 'disapproved'
+            %>
+            <tr>
+
+              <td class="pl-4 align-top py-3">
+                <div class="d-flex">
+                  <div class="mr-2 mt-1">
+                    <% if is_error %>
+                      <i class="icon icon-alert-triangle text-danger" title="Disapproved"></i>
+                    <% else %>
+                      <i class="icon icon-info text-warning" title="Warning"></i>
+                    <% end %>
+                  </div>
+                  <div>
+                    <strong class="text-dark d-block" style="font-size: 0.95rem;"><%= issue[:short_title] %></strong>
+                    <span class="badge badge-light border mt-1 text-muted">Code: <%= issue[:code] %></span>
+                  </div>
+                </div>
+              </td>
+
+              <td class="align-top py-3">
+                <p class="text-muted mb-1" style="line-height: 1.4; font-size: 0.9rem;">
+                  <%= issue[:long_title] %>
+                </p>
+                <a href="https://support.google.com/merchants/search?q=<%= u issue[:short_title] %>" target="_blank" class="small font-weight-bold text-primary">
+                  Learn more <i class="icon icon-external-link" style="font-size: 0.7rem;"></i>
+                </a>
+              </td>
+
+              <td class="text-center align-top py-3">
+                <div class="h4 mb-0 font-weight-bold text-dark"><%= issue[:affected_count] %></div>
+                <div class="small text-muted"><%= percent %>% of catalog</div>
+              </td>
+
+              <td class="text-right align-top py-3 pr-4">
+                <div class="d-flex flex-column align-items-end">
+                  <%# View Products Button - Links to Products Index %>
+                  <%= link_to admin_google_shopping_products_path, class: "btn btn-outline btn-sm mb-2 font-weight-bold", style: "border-radius: 4px;" do %>
+                    View products
+                  <% end %>
+                  <% if issue[:example_product_id] %>
+                    <%= link_to edit_admin_google_shopping_product_path(issue[:example_product_id]), class: "btn btn-light btn-sm text-primary font-weight-bold" do %>
+                      View fix (Example)
+                    <% end %>
+                  <% end %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+<% else %>
+
+  <div class="text-center py-5">
+    <div class="mb-4 text-success">
+      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+    </div>
+    <h3>Great job!</h3>
+    <p class="text-muted lead">No critical product issues were detected in your catalog.</p>
+    <%= link_to "Go to Products Manager", admin_google_shopping_products_path, class: "btn btn-primary mt-3" %>
+  </div>
+<% end %>

@@ -1,0 +1,331 @@
+<% content_for :page_title do %>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <%= image_tag 'app_icons/google_merchant_logo.svg', width: 35, height: 35, alt: 'Google Merchant Logo' %>
+    <span><%= Spree.t(:google_merchant_settings) %></span>
+  </div>
+<% end %>
+
+<% if ENV['GOOGLE_CLIENT_ID'].blank? || ENV['GOOGLE_CLIENT_SECRET'].blank? %>
+
+  <div class="card border mb-4 shadow-sm">
+    <div class="card-header bg-light text-grey">
+      <h5 class="card-title mb-0">
+        <span class="icon icon-alert-triangle mr-2"></span>
+        Setup: Google API Credentials
+      </h5>
+    </div>
+    <div class="card-body">
+    <div class="text-center pt-3 pb-3"><%= image_tag 'app_icons/welcome_scene.svg', width: 316, height: 112, alt: 'Google Merchant Logo', class: 'mx-auto d-block' %></div>
+
+    <p class="lead mb-3 mt-3 text-center">Connect Spree to Google Merchant Center</p>  
+    <p class="alert alert-info">To connect Spree to Google Merchant, you first need to create an OAuth Client in the Google Cloud Console.</p>
+      
+      <ol class="pl-4 mt-3">
+        <li class="mb-3">
+          <strong>Create Credentials:</strong><br>
+          <div class="card card-info mt-4 p-3"> <p class="card-text"> Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color: #236485;font-weight:bold;text-decoration:none;"> Google Cloud Console &gt; APIs &amp; Services &gt; Credentials </a></p></div>
+        </li>
+        <li class="mb-3">
+          <strong>Create OAuth Client ID:</strong><br>
+          <div class="card card-info mt-4 p-3" style="font-weight:500">Create Credentials → OAuth client ID → "Web application"</div>
+        </li>
+        <li class="mb-3">
+          <strong>Configure Redirect URI:</strong>
+          <p class="mt-2 mb-3">Add exactly this URL:</p>
+          <code class="p-2 bg-light d-block mt-1 rounded border text-break">
+            <%= spree.callback_admin_google_merchant_settings_url %>
+          </code>
+        </li>
+        <li class="mb-3"><strong>Save to .env file:</strong><div style="position:relative; display:inline-block; width:100%;"><pre id="envCode" style="background: #fafafa;color: #333333;padding:12px;border: 1px solid rgba(227, 227, 227, .85) !important;border-radius:12px;margin-top:8px;font-family:monospace;">
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
+         </pre><button id="copyBtn" class="btn btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('envCode').innerText.trim()); this.innerText='Copied';" style="position:absolute; top:30px; right:10px; padding:6px 12px; cursor:pointer; font-size:12px;">Copy</button></div>
+        </li>
+      </ol>
+      <%= button_tag "I have added the keys, Refresh Page", type: 'button', onclick: 'window.location.reload();', class: "float-right btn btn-primary" %>
+    </div>
+  </div>
+
+<% else %>
+
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header border-bottom">
+      <h5 class="card-title mb-0">1. Google Account Connection</h5>
+    </div>
+    <div class="card-body p-4">
+      <% if @credential.active? %>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+          <div class="d-flex align-items-center mb-3 mb-md-0">
+            <div class="mr-3 p-3 bg-white border rounded rounded-circle shadow-sm">
+               <%# Google G Icon %>
+               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            </div>
+            <div>
+              <h5 class="mb-1 text-dark font-weight-bold">Connected to Google</h5>
+              <p class="mb-0 text-muted">
+                Using: <strong><%= @credential.email.presence || 'Google Account' %></strong>
+              </p>
+            </div>
+          </div>
+
+          <div class="text-center text-md-right">
+            <div class="mb-2">
+              <span class="badge badge-success px-3 py-2">
+                <span class="icon icon-check mr-1"></span> Token Active
+              </span>
+            </div>
+            <small class="text-muted d-block mb-2"> Expires: <%= local_time(@credential.token_expires_at) %></small>
+            <%= button_to disconnect_admin_google_merchant_settings_path, 
+                method: :delete, 
+                data: { confirm: "Are you sure? This will stop syncing products." }, 
+                class: "btn btn-primary btn-sm",
+                form: { style: "display:inline-block;" } do %>
+              <span class="icon icon-logout mr-1"></span> Disconnect
+            <% end %>
+          </div>
+        </div>
+
+      <% else %>
+        
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+          <div class="d-flex align-items-center mb-3 mb-md-0">
+             <div class="mr-3 p-3 bg-white border rounded rounded-circle shadow-sm">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+             </div>
+             <div>
+               <h5 class="mb-1 text-dark font-weight-bold">Connect Merchant Center</h5>
+               <p class="mb-0 text-muted small" style="max-width: 400px; line-height: 1.4;">
+                 Authorize access to sync products, inventory, and prices automatically.
+               </p>
+             </div>
+          </div>
+          <div class="text-center text-md-right">
+             <%= link_to spree.connect_admin_google_merchant_settings_path, class: "btn btn-primary btn-lg shadow-sm px-4", data: { turbo: false } do %>
+               <span class="icon icon-brand-google mr-2"></span> Connect Account
+             <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <%= form_with model: [:admin, @credential], url: spree.admin_google_merchant_settings_path, method: :put do |f| %>
+
+    <div class="row">
+      <div class="col-12 col-lg-6">
+        <div class="card mb-4 shadow-sm <%= 'opacity-50' unless @credential.active? %>">
+          <div class="card-header border-bottom">
+            <h5 class="card-title mb-0">2. Feed Configuration</h5>
+          </div>
+          <div class="card-body">
+            <% unless @credential.active? %>
+               <div class="overlay-lock text-center p-4">
+                 <span class="icon icon-lock mb-2"></span><br>
+                 Please connect your account to edit settings.
+               </div>
+            <% end %>
+
+            <div class="form-group">
+              <%= f.label :merchant_center_id, "Merchant Center ID", class: "font-weight-bold" %>
+              <%= f.text_field :merchant_center_id, class: 'form-control', disabled: !@credential.active?, placeholder: 'e.g. 123456789' %>
+              <small class="form-text text-muted">Found in the top-right corner of your Google Merchant Center dashboard.</small>
+            </div>
+            
+            <div class="form-group mt-3">
+              <%= f.label :target_country, "Target Country", class: "font-weight-bold" %>
+              <%= f.select :target_country, 
+                  options_for_select(google_supported_countries_options, @credential.target_country), 
+                  { include_blank: 'Select Country' }, 
+                  { class: 'form-control select2', disabled: !@credential.active? } %>
+            </div>
+
+            <div class="form-group">
+              <%= f.label :target_currency, "Target Currency", class: "font-weight-bold" %>
+              <%= f.select :target_currency, 
+                  options_for_select(google_supported_currencies_options, @credential.target_currency), 
+                  { include_blank: 'Select Currency' }, 
+                  { class: 'form-control select2', disabled: !@credential.active? } %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <div class="card mb-4 shadow-sm <%= 'opacity-50' unless @credential.active? %>">
+          <div class="card-header border-bottom">
+            <h5 class="card-title mb-0">3. Global Defaults</h5>
+          </div>
+          <div class="card-body">
+            
+            <label class="font-weight-bold">Shipping Handling Time</label>
+            <div class="row">
+              <div class="col-6">
+                <div class="form-group">
+                  <%= f.label :default_min_handling_time, "Global Min (Days)", class: "small text-muted text-uppercase font-weight-bold" %>
+                  <%= f.number_field :default_min_handling_time, class: 'form-control', placeholder: 'e.g. 1', disabled: !@credential.active? %>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-group">
+                  <%= f.label :default_max_handling_time, "Global Max (Days)", class: "small text-muted text-uppercase font-weight-bold" %>
+                  <%= f.number_field :default_max_handling_time, class: 'form-control', placeholder: 'e.g. 3', disabled: !@credential.active? %>
+                </div>
+              </div>
+            </div>
+            <small class="text-muted d-block mb-3">These values are used if a product does not have specific handling times set.</small>
+
+            <hr>
+            
+            <div class="form-group">
+              <%= f.label :default_product_type, "Default Product Type (Internal)", class: "font-weight-bold" %>
+              <%= f.text_field :default_product_type, class: 'form-control', placeholder: 'e.g. Electronics', disabled: !@credential.active? %>
+              <small class="form-text text-muted">
+                Your internal categorization for reporting purposes.
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm <%= 'opacity-50' unless @credential.active? %>">
+      <div class="card-header border-bottom">
+        <h5 class="card-title mb-0">4. Global Google Product Category</h5>
+      </div>
+      <div class="card-body">
+        
+        <div class="form-group" id="google-category-container">
+          <%= f.hidden_field :default_google_product_category, id: 'final_google_id' %>
+
+          <% 
+            saved_id = @credential.default_google_product_category
+            display_text = ""
+            if saved_id.present?
+              taxon = Spree::GoogleTaxon.find_by(google_id: saved_id)
+              display_text = taxon ? taxon.name : "ID: #{saved_id}" 
+            end
+          %>
+          <div id="current-selection-display" class="border rounded bg-white p-3 shadow-sm <%= saved_id.present? ? '' : 'd-none' %>">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="d-flex align-items-center overflow-hidden mr-3">
+                <div class="flex-shrink-0 text-success mr-3 d-flex align-items-center justify-content-center bg-light rounded-circle" style="width: 40px; height: 40px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+                <div class="overflow-hidden">
+                  <div class="text-uppercase text-muted font-weight-bold mb-0" style="font-size: 0.65rem; letter-spacing: 0.8px;">
+                    Selected Default Category
+                  </div>
+                  <div class="text-dark font-weight-bold text-truncate" title="<%= display_text %>">
+                    <span id="display_text"><%= display_text %></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex-shrink-0">
+                <button type="button" class="btn btn-sm btn-outline-primary font-weight-bold px-3" onclick="resetDrillDown()" <%= 'disabled' unless @credential.active? %>>
+                  Change
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="drill-down-area" class="<%= saved_id.present? ? 'd-none' : '' %>">
+             <% unless saved_id.present? %>
+               <div class="alert alert-info mb-3">
+                 <span class="icon icon-info-circle mr-2"></span>
+                 Select a default category. This will be automatically used for any product that doesn't have a specific category assigned.
+               </div>
+             <% end %>
+            <select class="form-control form-control-lg mb-2" id="root-level-select" onchange="fetchSubCategories(this, 0)" <%= 'disabled' unless @credential.active? %>>
+              <option value=""> Select Category </option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="form-actions text-center" data-hook="buttons">
+      <%= button Spree.t('actions.save'), 'save', 'submit', { class: 'btn-primary btn-md px-5 shadow', disabled: !@credential.active? } %>
+    </div>
+  <% end %>
+
+  <script>
+    const API_URL = "<%= drill_down_admin_google_shopping_taxons_path %>";
+    
+    document.addEventListener("DOMContentLoaded", function() {
+      const rootSelect = document.getElementById('root-level-select');
+      if(rootSelect) {
+        loadLevel('', rootSelect);
+      }
+    });
+
+    function loadLevel(parentPath, selectElement) {
+      fetch(`${API_URL}?parent_path=${encodeURIComponent(parentPath)}`)
+        .then(response => response.json())
+        .then(data => {
+          data.categories.forEach(cat => {
+            let option = document.createElement("option");
+            option.value = cat;
+            option.text = cat;
+            selectElement.add(option);
+          });
+        });
+    }
+
+    function fetchSubCategories(selectInfo, level) {
+      const selectedValue = selectInfo.value;
+      const container = document.getElementById('drill-down-area');
+      const hiddenInput = document.getElementById('final_google_id');
+      const displayArea = document.getElementById('current-selection-display');
+      const displayText = document.getElementById('display_text');
+
+      let allSelects = container.querySelectorAll('select');
+      for (let i = level + 1; i < allSelects.length; i++) { allSelects[i].remove(); }
+
+      if (!selectedValue) { hiddenInput.value = ""; return; }
+
+      let pathParts = [];
+      for (let i = 0; i <= level; i++) { pathParts.push(allSelects[i].value); }
+      let fullPath = pathParts.join(' > ');
+
+      fetch(`${API_URL}?parent_path=${encodeURIComponent(fullPath)}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.current_id) {
+            hiddenInput.value = data.current_id;
+            displayText.textContent = fullPath; 
+          } else { 
+             hiddenInput.value = ""; 
+          }
+
+          if (!data.is_leaf && data.categories.length > 0) {
+            let newSelect = document.createElement("select");
+            newSelect.className = "form-control form-control-lg mb-2";
+            newSelect.setAttribute("onchange", `fetchSubCategories(this, ${level + 1})`);
+            let defaultOption = document.createElement("option");
+            defaultOption.text = ` Select Sub-Category `; defaultOption.value = "";
+            newSelect.add(defaultOption);
+            data.categories.forEach(cat => {
+              let option = document.createElement("option"); option.value = cat; option.text = cat; newSelect.add(option);
+            });
+            container.appendChild(newSelect);
+          } else if (data.is_leaf && data.current_id) {
+             container.classList.add('d-none');
+             displayArea.classList.remove('d-none');
+          }
+        });
+    }
+
+    function resetDrillDown() {
+      document.getElementById('final_google_id').value = "";
+      document.getElementById('current-selection-display').classList.add('d-none');
+      const container = document.getElementById('drill-down-area');
+      container.classList.remove('d-none');
+      container.innerHTML = '<select class="form-control form-control-lg mb-2" id="root-level-select" onchange="fetchSubCategories(this, 0)"><option value=""> Select Main Category </option></select>';
+      loadLevel('', document.getElementById('root-level-select'));
+    }
+  </script>
+<% end %>

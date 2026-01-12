@@ -1,0 +1,35 @@
+en:
+  spree:
+    # --- Page Titles & Headers ---
+    google_merchant_settings: "Google Merchant Settings"
+    google_shopping_settings: "Google Shopping Settings"
+    google_merchant: "Merchant Center"
+    google_merchant_products: "Google Products"
+    google_data_quality_issues: "Data Quality Issues"
+    google_shopping: "Google Shopping"
+
+    # --- Navigation & Tabs ---
+    admin:
+      tab:
+        google_shopping: "Google Shopping"
+      
+    # --- Sidebar Menu ---
+    google_dashboard: "Dashboard"
+    google_products: "Products"
+    # 'settings' is already provided by Spree core
+
+    # --- Actions & Flash Messages ---
+    connect_merchant_center: "Connect Merchant Center"
+    sync_now: "Sync Now"
+    sync_all_products: "Sync All Products"
+    view_issues: "View Issues"
+    view_fixes: "View Fixes"
+    
+    # --- Status Labels ---
+    # Used in Dashboard and Product Lists
+    google_status:
+      active: "Active"
+      pending: "Pending"
+      disapproved: "Disapproved"
+      limited: "Limited"
+      not_synced: "Not Synced"

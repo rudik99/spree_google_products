@@ -1,0 +1,19 @@
+<%# Spree 5 Filters Layout %>
+<div class="filter-wrap py-3">
+  <%= search_form_for [:admin, @search], url: admin_google_shopping_products_path do |f| %>
+    <div class="d-flex flex-wrap gap-2">
+      <div class="flex-grow-1">
+        <div class="input-group">
+          <%= f.text_field :name_cont, class: "form-control", placeholder: Spree.t(:search) %>
+          <div class="input-group-append">
+            <button type="submit" class="btn btn-primary">
+              <%= icon('search') %>
+            </button>
+          </div>
+        </div>
+      </div>
+      <%# You can re-enable the drawer logic if you want complex filters later %>
+      <%# For now, a simple text search fits 90% of use cases %>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,336 @@
+<% content_for :page_title do %>
+  Edit Google Attributes: <%= @product.name %>
+<% end %>
+
+<% content_for :page_actions do %>
+  <%= link_to admin_google_shopping_products_path, class: 'btn btn-secondary' do %>
+    <%= icon('arrow-left', class: 'mr-1') %> Back to List
+  <% end %>
+<% end %>
+
+<% 
+  store = @product.stores.first || Spree::Store.default
+  credential = store.google_credential
+  is_connected = credential&.active?
+%>
+
+<% unless is_connected %>
+  <div class="alert alert-warning mb-4 shadow-sm">
+    <div class="d-flex align-items-center">
+      <div class="mr-3"><%= icon('lock', class: 'lead') %></div>
+      <div>
+        <h5 class="alert-heading h6 font-weight-bold mb-1">Editing Disabled</h5>
+        <p class="mb-0 small">
+          You must connect your Google Merchant Center account before you can edit these settings.
+          <%= link_to "Go to Settings", edit_admin_google_merchant_settings_path, class: "font-weight-bold text-dark underline" %>
+        </p>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<% g_attr = @product.google_product_attribute %>
+<% if is_connected && g_attr&.google_issues.present? %>
+  <div class="card border-danger mb-4 shadow-sm">
+    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center py-2">
+      <h6 class="mb-0"><%= icon('alert-triangle', class: 'mr-2') %> Merchant Center Issues (Product Level)</h6>
+      <span class="badge badge-light text-danger font-weight-bold">Action Required</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-striped mb-0 small">
+        <thead class="thead-light">
+          <tr><th style="width: 15%">Severity</th><th>Issue</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+          <% g_attr.google_issues.each do |issue| %>
+            <tr>
+              <td class="align-middle">
+                <% if issue['servability'] == 'disapproved' %>
+                  <span class="badge badge-danger">Disapproved</span>
+                <% else %>
+                  <span class="badge badge-warning text-white">Warning</span>
+                <% end %>
+              </td>
+              <td class="font-weight-bold align-middle"><%= issue['description'] %></td>
+              <td class="text-muted align-middle">
+                <%= issue['detail'] %>
+                <div class="mt-1">Code: <code><%= issue['code'] %></code></div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>
+
+<%= form_for [:admin, @product], url: admin_google_shopping_product_path(@product), method: :put do |f| %>
+  
+  <fieldset <%= 'disabled' unless is_connected %>>
+    
+    <div class="row">
+      <div class="col-12 col-lg-8">
+        <div class="card mb-4 <%= 'opacity-50' unless is_connected %> shadow-sm">
+          <div class="card-header border-bottom">
+            <h5 class="card-title mb-0">Required Attributes</h5>
+          </div>
+          <div class="card-body">
+            <%= f.fields_for :google_product_attribute do |g| %>
+              <div class="form-group">
+                <%= g.label :brand, "Brand Name", class: "font-weight-bold" %>
+                <%= g.text_field :brand, class: 'form-control', placeholder: 'e.g. Nike' %>
+              </div>
+              <div class="form-group mt-4">
+                <label class="font-weight-bold">Sale Date Range <small class="text-muted font-weight-normal">(Optional)</small></label>
+                <div class="p-3 bg-light rounded border">
+                  <div class="row">
+                    <div class="col-6">
+                      <%= g.label :sale_start_at, "Start Date", class: "small text-uppercase text-muted font-weight-bold" %>
+                      <%= g.date_field :sale_start_at, class: 'form-control' %>
+                    </div>
+                    <div class="col-6">
+                      <%= g.label :sale_end_at, "End Date", class: "small text-uppercase text-muted font-weight-bold" %>
+                      <%= g.date_field :sale_end_at, class: 'form-control' %>
+                    </div>
+                  </div>
+                  <div class="mt-2 small text-muted">
+                    <%= icon('info-circle', class: 'mr-1') %> If set, the "Sale Price" will only be active on Google during this period.
+                  </div>
+                </div>
+              </div>
+              <div class="py-2"></div>
+              <div class="form-group">
+                <label class="font-weight-bold">Shipping & Handling Overrides</label>
+                <div class="p-3 bg-light rounded border">
+                  <div class="row">
+                    <div class="col-6">
+                      <%= g.label :min_handling_time, "Min Handling (Days)", class: "small text-uppercase text-muted font-weight-bold" %>
+                      <%= g.number_field :min_handling_time, class: 'form-control', placeholder: 'Global Default' %>
+                    </div>
+                    <div class="col-6">
+                      <%= g.label :max_handling_time, "Max Handling (Days)", class: "small text-uppercase text-muted font-weight-bold" %>
+                      <%= g.number_field :max_handling_time, class: 'form-control', placeholder: 'Global Default' %>
+                    </div>
+                  </div>
+                  <div class="mt-2 small text-muted">
+                    <%= icon('info-circle', class: 'mr-1') %> Weight/Dimensions are auto-synced from the Master Variant.
+                  </div>
+                </div>
+              </div>
+              <div class="py-2"></div>
+              <div class="form-group">
+                <%= g.label :product_type, "Product Type (Your Categorization)", class: "font-weight-bold" %>
+                <%= g.text_field :product_type, class: 'form-control', placeholder: 'e.g. Home > Living Room > Vases' %>
+                <small class="form-text text-muted mt-2">Overrides the global default setting.</small>
+              </div>
+              <div class="form-group mt-4" id="google-category-container">
+                <%= g.label :google_product_category, "Google Product Category", class: "font-weight-bold" %>
+                <%= g.hidden_field :google_product_category, id: 'final_google_id' %>
+                <% 
+                  saved_id = g.object.google_product_category
+                  default_id = credential&.default_google_product_category
+                  default_text = "None"
+                  if default_id.present?
+                    default_taxon = Spree::GoogleTaxon.find_by(google_id: default_id)
+                    default_text = default_taxon ? default_taxon.name : "ID: #{default_id}"
+                  end
+                  display_text = ""
+                  if saved_id.present?
+                    taxon = Spree::GoogleTaxon.find_by(google_id: saved_id)
+                    display_text = taxon ? taxon.name : "ID: #{saved_id}" 
+                  end
+                %>
+                <div id="current-selection-display" class="border rounded bg-white p-3 shadow-sm <%= saved_id.present? ? '' : 'd-none' %>">
+                  <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center overflow-hidden mr-3">
+                      <div class="flex-shrink-0 text-success mr-3 d-flex align-items-center justify-content-center bg-light rounded-circle" style="width: 40px; height: 40px;">
+                        <%= icon('check', class: 'lead') %>
+                      </div>
+                      <div class="overflow-hidden">
+                        <div class="text-uppercase text-muted font-weight-bold small" style="letter-spacing: 0.5px;">Selected Category</div>
+                        <div class="text-dark font-weight-bold text-truncate" title="<%= display_text %>">
+                          <span id="display_text"><%= display_text %></span>
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="resetDrillDown()" <%= 'disabled' unless is_connected %>>
+                      Change
+                    </button>
+                  </div>
+                </div>
+
+                <div id="drill-down-area" class="<%= saved_id.present? ? 'd-none' : '' %>">
+                  <select class="form-control mb-2" id="root-level-select" onchange="fetchSubCategories(this, 0)" <%= 'disabled' unless is_connected %>>
+                    <option value=""> Select Category </option>
+                  </select>
+                </div>
+                
+                <div class="badge badge-secondary d-flex align-items-start mt-2 mb-0 p-2" style="color: #061932;">
+                  <div class="small">
+                    <strong>System Default:</strong> <%= default_text %>
+                    <br>
+                  </div>
+                </div>
+              </div>
+              <script>
+                const API_URL = "<%= drill_down_admin_google_shopping_taxons_path %>";
+                document.addEventListener("DOMContentLoaded", function() {
+                  const rootSelect = document.getElementById('root-level-select');
+                  if(rootSelect) loadLevel('', rootSelect);
+                });
+                function loadLevel(parentPath, selectElement) {
+                  fetch(`${API_URL}?parent_path=${encodeURIComponent(parentPath)}`).then(r => r.json()).then(data => {
+                    data.categories.forEach(cat => {
+                      let opt = document.createElement("option"); opt.value = cat; opt.text = cat; selectElement.add(opt);
+                    });
+                  });
+                }
+                function fetchSubCategories(selectInfo, level) {
+                  const val = selectInfo.value;
+                  const container = document.getElementById('drill-down-area');
+                  const hidden = document.getElementById('final_google_id');
+                  const display = document.getElementById('current-selection-display');
+                  const dispText = document.getElementById('display_text');
+                  
+                  let selects = container.querySelectorAll('select');
+                  for (let i = level + 1; i < selects.length; i++) selects[i].remove();
+                  
+                  if (!val) { hidden.value = ""; return; }
+                  
+                  let pathParts = [];
+                  for (let i = 0; i <= level; i++) pathParts.push(selects[i].value);
+                  let fullPath = pathParts.join(' > ');
+                  
+                  fetch(`${API_URL}?parent_path=${encodeURIComponent(fullPath)}`).then(r => r.json()).then(data => {
+                    if (data.current_id) { hidden.value = data.current_id; dispText.textContent = fullPath; } 
+                    else { hidden.value = ""; }
+
+                    if (!data.is_leaf && data.categories.length > 0) {
+                      let newSel = document.createElement("select");
+                      newSel.className = "form-control mb-2";
+                      newSel.setAttribute("onchange", `fetchSubCategories(this, ${level + 1})`);
+                      let def = document.createElement("option"); def.text = " Select Sub-Category "; def.value = "";
+                      newSel.add(def);
+                      data.categories.forEach(cat => { let opt = document.createElement("option"); opt.value = cat; opt.text = cat; newSel.add(opt); });
+                      container.appendChild(newSel);
+                    } else if (data.is_leaf && data.current_id) {
+                      container.classList.add('d-none'); display.classList.remove('d-none');
+                    }
+                  });
+                }
+                function resetDrillDown() {
+                  document.getElementById('final_google_id').value = "";
+                  document.getElementById('current-selection-display').classList.add('d-none');
+                  const container = document.getElementById('drill-down-area');
+                  container.classList.remove('d-none');
+                  container.innerHTML = '<select class="form-control mb-2" id="root-level-select" onchange="fetchSubCategories(this, 0)"><option value=""> Select Category </option></select>';
+                  loadLevel('', document.getElementById('root-level-select'));
+                }
+              </script>
+
+              <div class="row mt-4">
+                <div class="col-6">
+                  <div class="form-group">
+                    <%= g.label :gtin, "GTIN / UPC", class: "font-weight-bold" %>
+                    <%= g.text_field :gtin, class: 'form-control', placeholder: 'Overrides Variant GTIN' %>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-group">
+                    <%= g.label :mpn, "MPN", class: "font-weight-bold" %>
+                    <%= g.text_field :mpn, class: 'form-control', placeholder: 'Overrides Variant MPN' %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <div class="card mb-4 <%= 'opacity-50' unless is_connected %> shadow-sm">
+          <div class="card-header border-bottom">
+            <h5 class="card-title mb-0">Demographics</h5>
+          </div>
+          <div class="card-body">
+            <%= f.fields_for :google_product_attribute do |g| %>
+              <div class="form-group">
+                <%= g.label :gender, class: "font-weight-bold" %>
+                <%= g.select :gender, ['', 'male', 'female', 'unisex'], {}, class: 'form-control select2' %>
+              </div>
+              <div class="form-group">
+                <%= g.label :age_group, class: "font-weight-bold" %>
+                <%= g.select :age_group, ['', 'adult', 'kids', 'toddler', 'infant'], {}, class: 'form-control select2' %>
+              </div>
+              <div class="form-group">
+                <%= g.label :condition, class: "font-weight-bold" %>
+                <%= g.select :condition, ['new', 'refurbished', 'used'], {}, class: 'form-control select2' %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form-actions mb-5">
+      <%= f.submit "Update Settings & Sync", class: 'btn btn-primary btn-lg shadow-sm', disabled: !is_connected %>
+    </div>
+  </fieldset>
+<% end %>
+
+<div class="card mb-5 <%= 'opacity-50' unless is_connected %> shadow-sm">
+  <div class="card-header bg-light border-bottom">
+    <h5 class="card-title mb-0">Variant Status Breakdown</h5>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="thead">
+        <tr>
+          <th>Variant / SKU</th>
+          <th>Options</th>
+          <th>Google Status</th>
+          <th>Issues</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% ([@product.master] + @product.variants).each do |variant| %>
+          <% attr = Spree::GoogleVariantAttribute.find_by(variant_id: variant.id) %>
+          <% status = attr&.google_status || 'not_synced' %>
+          <% issue_count = attr&.google_issues&.count || 0 %>
+          <tr>
+            <td class="align-middle">
+              <span class="font-weight-bold"><%= variant.sku %></span>
+              <% if variant.is_master? %>
+                <span class="badge badge-info ml-1">Master</span>
+              <% end %>
+            </td>
+            <td class="align-middle"><%= variant.options_text.presence || "-" %></td>
+            <td class="align-middle">
+              <% case status %>
+              <% when 'active' %>
+                <span class="badge badge-success px-2 py-1"><%= icon('check') %> Active</span>
+              <% when 'pending' %>
+                <span class="badge badge-info px-2 py-1"><%= icon('clock') %> Pending</span>
+              <% when 'disapproved' %>
+                <span class="badge badge-danger px-2 py-1"><%= icon('x') %> Disapproved</span>
+              <% else %>
+                <span class="badge badge-info px-2 py-1">Not Synced</span>
+              <% end %>
+            </td>
+            <td class="align-middle">
+              <% if issue_count > 0 %>
+                <div class="d-flex align-items-center">
+                  <span class="badge badge mr-2"><%= issue_count %> Issues</span>
+                  <%= link_to issues_admin_google_shopping_product_path(@product, variant_id: variant.id), class: 'btn btn-sm btn-outline-primary font-weight-bold' do %>View
+                  <% end %>
+                </div>
+              <% elsif status == 'active' %>
+                <span class="text-success small font-weight-bold"><%= icon('check') %> Clean</span>
+              <% else %>
+                <span class="text-muted small">-</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

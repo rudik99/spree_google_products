@@ -1,0 +1,48 @@
+<% content_for :page_title do %>
+    Google Shopping Issues
+  <% end %>
+  
+  <% content_for :page_actions do %>
+    <%= button_link_to "Back to Product", edit_admin_google_shopping_product_path(@product), icon: 'arrow-left', class: 'btn-light' %>
+  <% end %>
+  
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0">
+        Issues for Variant: <strong><%= @variant.sku %></strong> 
+        <small class="text-muted">(<%= @variant.options_text %>)</small>
+      </h5>
+    </div>
+  
+    <div class="table-responsive">
+      <table class="table">
+        <thead class="thead">
+          <tr>
+            <th style="width: 20%">Error Code</th>
+            <th style="width: 30%">Description</th>
+            <th>Detail / Suggestion</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if @issues.any? %>
+            <% @issues.each do |issue| %>
+              <tr>
+                <td>
+                  <span class="badge badge-danger"><%= issue['code'] || 'API Error' %></span>
+                </td>
+                <td><strong><%= issue['description'] %></strong></td>
+                <td class="text-muted"><%= issue['detail'] %></td>
+              </tr>
+            <% end %>
+          <% else %>
+            <tr>
+              <td colspan="3" class="text-center text-success py-4">
+                <i class="icon icon-check fa-2x"></i><br>
+                No issues detected for this variant.
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
